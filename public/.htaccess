@@ -1,0 +1,32 @@
+# Restrict direct access to .php files from sources other than localhost.
+<Files "*.php">
+  Require ip 127.0.0.1
+</Files>
+
+# Authorize the only entry point for requests coming from external IPs, our index.php file.
+<Files "index.php">
+  Require all granted
+</Files>
+
+# Activate the route rewriting engine.
+RewriteEngine On
+
+# Uncomment the following lines if you want to enforce access through HTTPS
+# RewriteCond %{HTTPS} off
+# RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R,L]
+
+# Activate the authorization header if you're using PHP in CGI mode.
+RewriteCond %{HTTP:Authorization} ^(.)
+RewriteRule . - [e=HTTP_AUTHORIZATION:%1]
+
+# Set the mod_rewrite relative path where our files are located.
+# If you are going to use a directory at the end of the URL, e.g., http://yourdomain.com/routeman,
+# you should set this.
+# RewriteBase /routeman/
+
+# And now our redirection control. These lines instruct the server
+# that any file or directory name in a URL should redirect it
+# to the index.php file.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.+)$ index.php [QSA,L]
