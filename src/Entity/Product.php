@@ -38,6 +38,10 @@ class Product
   public Collection $capacities;
   #[ManyToMany(targetEntity: Size::class, mappedBy: "products")]
   public Collection $sizes;
+  #[ManyToMany(targetEntity: USB3::class, mappedBy: "products")]
+  public Collection $usb3;
+  #[ManyToMany(targetEntity: TouchID::class, mappedBy: "products")]
+  public Collection $touchID;
   #[Column]
   public float $price;
   #[Column]

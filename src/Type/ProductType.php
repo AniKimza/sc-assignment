@@ -26,6 +26,8 @@ class ProductType extends ObjectType
         "capacities" => Type::listOf(TypeRegistry::type(CapacityType::class)),
         "colors" => Type::listOf(TypeRegistry::type(ColorType::class)),
         "sizes" => Type::listOf(TypeRegistry::type(SizeType::class)),
+        "usb3" => Type::listOf(TypeRegistry::type(USB3Type::class)),
+        "touchID" => Type::listOf(TypeRegistry::type(TouchIDType::class)),
         "price" => Type::float(),
         "currency" => Type::string()
       ]

@@ -17,11 +17,14 @@ use App\Entity\Order;
 use App\Entity\OrderItem;
 use App\Entity\Product;
 use App\Entity\Size;
+use App\Entity\TouchID;
+use App\Entity\USB3;
 use App\Type\OrderItemInputType;
 use App\Type\OrderItemType;
 use App\Type\OrderType;
 use App\Type\ProductType;
 use App\Type\TypeRegistry;
+use Exception;
 use RuntimeException;
 use Throwable;
 
@@ -37,15 +40,20 @@ class GraphQL
           'products' => [
             "type" => Type::listOf(TypeRegistry::type(ProductType::class)),
             "args" => ["category" => Type::string()],
-            "resolve" => static fn($calc, array $args) =>
-            DoctrineManager::getEntityManager()
+            "resolve" => static function($calc, array $args) {
+              try{
+                return DoctrineManager::getEntityManager()
               ->createQueryBuilder()
               ->select("p")
               ->from(Product::class, "p")
               ->where("p.category LIKE :cat")
               ->setParameter("cat", $args["category"] ?? "%%")
               ->getQuery()
-              ->getResult()
+              ->getResult();
+              } catch (Exception $e) {
+                echo $e;
+              }
+            }
           ],
           "product" => [
             "type" => TypeRegistry::type(ProductType::class),
@@ -72,25 +80,34 @@ class GraphQL
               'items' =>  Type::listOf(TypeRegistry::type(OrderItemInputType::class)),
             ],
             'resolve' => static function ($calc, array $args) {
-              $newOrder = new Order();
-              foreach ($args["items"] as $oi) {
-                $newOrderItem = new OrderItem();
-                $newOrderItem->order = $newOrder;
-                $newOrderItem->quantity = $oi["quantity"];
-                $newOrderItem->product = DoctrineManager::getEntityManager()->find(Product::class, $oi["product"]);
-                if (array_key_exists("capacity", $oi))
-                  $newOrderItem->capacity = DoctrineManager::getEntityManager()->find(Capacity::class, $oi["capacity"]);
-                if (array_key_exists("size", $oi))
-                  $newOrderItem->size = DoctrineManager::getEntityManager()->find(Size::class, $oi["size"]);
-                if (array_key_exists("color", $oi))
-                  $newOrderItem->color = DoctrineManager::getEntityManager()->find(Color::class, $oi["color"]);
-                $newOrder->items->add($newOrderItem);
-                DoctrineManager::getEntityManager()->persist($newOrderItem);
+              try {
+                $newOrder = new Order();
+                $newOrder->id = uniqid("order_");
+                foreach ($args["items"] as $oi) {
+                  $newOrderItem = new OrderItem();
+                  $newOrderItem->id = uniqid("oi_");
+                  $newOrderItem->quantity = $oi["quantity"];
+                  $newOrderItem->product = DoctrineManager::getEntityManager()->find(Product::class, $oi["product"]);
+                  if (array_key_exists("capacity", $oi))
+                    $newOrderItem->capacity = DoctrineManager::getEntityManager()->find(Capacity::class, $oi["capacity"]);
+                  if (array_key_exists("size", $oi))
+                    $newOrderItem->size = DoctrineManager::getEntityManager()->find(Size::class, $oi["size"]);
+                  if (array_key_exists("color", $oi))
+                    $newOrderItem->color = DoctrineManager::getEntityManager()->find(Color::class, $oi["color"]);
+                  if (array_key_exists("usb3", $oi))
+                    $newOrderItem->usb3 = DoctrineManager::getEntityManager()->find(USB3::class, $oi["usb3"]);
+                  if (array_key_exists("touchID", $oi))
+                    $newOrderItem->touchID = DoctrineManager::getEntityManager()->find(TouchID::class, $oi["touchID"]);
+                  $newOrder->items->add($newOrderItem);
+                  DoctrineManager::getEntityManager()->persist($newOrderItem);
+                }
+                DoctrineManager::getEntityManager()->persist($newOrder);
                 DoctrineManager::getEntityManager()->flush();
                 DoctrineManager::getEntityManager()->clear();
+                return $newOrder;
+              } catch (Exception $e) {
+                echo $e;
               }
-              DoctrineManager::getEntityManager()->persist($newOrder);
-              DoctrineManager::getEntityManager()->clear();
             }
           ],
         ],

@@ -15,11 +15,11 @@ use Doctrine\ORM\Mapping\OneToMany;
 use Doctrine\ORM\Mapping\Table;
 
 #[Entity]
-#[Table("order")]
+#[Table("orders")]
 class Order
 {
   #[Id]
-  #[Column(length: 255), GeneratedValue]
+  #[Column(length: 255)]
   public string $id;
   #[OneToMany(targetEntity: OrderItem::class, mappedBy: "order", cascade: ["persist"])]
   public Collection $items;

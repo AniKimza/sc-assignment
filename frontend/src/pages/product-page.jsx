@@ -1,11 +1,12 @@
-import { gql, useQuery } from "@apollo/client";
-import React, { useState } from "react";
-import { useParams } from "react-router";
+import React from "react";
+import { Query } from "@apollo/client/react/components";
+import { gql } from "@apollo/client";
 import parse from 'html-react-parser';
 import DOMPurify from 'dompurify';
-import { useCart } from "react-use-cart";
-import { useCartOverLayContext } from "../state/CartOverlay";
+import { CartOverLayContext } from "../state/CartOverlay";
 import { cn } from "../utils/cn";
+import { withRouter } from "../utils/withRouter";
+import { withCart } from "../utils/withCart";
 
 const htmlFrom = (htmlString) => {
   const cleanHtmlString = DOMPurify.sanitize(htmlString,
@@ -14,133 +15,199 @@ const htmlFrom = (htmlString) => {
   return html;
 }
 
-const ProductPage = () => {
-  let { id } = useParams()
-  const { addItem } = useCart();
-  const { setIsCartOpen } = useCartOverLayContext();
-  const { loading, error, data } = useQuery(gql`
-{
-  product(id: "${id}") {
-    id
-    name
-    price
-    currency
-    description
-    inStock
-    gallery {
-      link
-    }
-    colors {
+const GET_PRODUCT = (id) => gql`
+  {
+    product(id: "${id}") {
       id
-      value
-      displayValue
-    }
-    capacities {
-      id
-      value
-      displayValue
-    }
-    sizes {
-      id
-      value
-      displayValue
+      name
+      price
+      currency
+      description
+      inStock
+      gallery {
+        link
+      }
+      colors {
+        id
+        value
+        displayValue
+      }
+      capacities {
+        id
+        value
+        displayValue
+      }
+      sizes {
+        id
+        value
+        displayValue
+      }
+      usb3 {
+        id
+        value
+        displayValue
+      }
+      touchID {
+        id
+        value
+        displayValue
+      }
     }
   }
-}
-`);
+`;
 
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState();
-  const [selectedColor, setSelectedColor] = useState();
-  const [selectedCapacity, setSelectedCapacity] = useState();
+class ProductPage extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      selectedImage: 0,
+      selectedSize: undefined,
+      selectedColor: undefined,
+      selectedCapacity: undefined,
+      usb3: undefined,
+      touchID: undefined
+    };
 
-  return (loading ? <div className="h-svh w-full flex justify-center items-center text-xl">Loading...</div> :
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex">
-        <div className="flex basis-1/2">
-          <div className="flex flex-col p-2 space-y-2 mr-2" data-testid="product-gallery">
-            {data.product.gallery.map((p, i) => <button key={p.link} onClick={() => setSelectedImage(i)}><img
-              src={p.link}
-              alt="Thumbnail"
-              className="w-16 h-16 rounded-lg cursor-pointer"
-            /> </button>)}
+    // const { addItem } = useCart();
+    // const { setIsCartOpen } = useCartOverLayContext();
+    // this.addItem = addItem;
+    // this.setIsCartOpen = setIsCartOpen;
+  }
 
-          </div>
-          <div className="flex-1">
-            <img
-              src={data.product.gallery[selectedImage].link}
-              alt="Product"
-              className="flex-1 rounded-lg"
-            />
-          </div>
-        </div>
+  handleAddToCart = (id, price) => {
+    const { selectedCapacity, selectedColor, selectedSize, usb3, touchID } = this.state;
+    const { cart } = this.props;
 
-        <div className="basis-1/2 pl-8">
-          <h1 className="text-3xl font-semibold">{data.product.name}</h1>
+    cart.addItem({
+      id,
+      price,
+      capacity: selectedCapacity,
+      color: selectedColor,
+      size: selectedSize,
+      usb3,
+      touchID
+    });
+  }
 
-          {data.product.sizes.length > 0 ? <div className="mt-4">
-            <span className="font-semibold">Size:</span>
-            <div className="flex space-x-2 mt-2" data-testid="product-attribute-size">
-              {data.product.sizes.map((size) => <button data-testid={`product-attribute-size-${size.id}`}
-                key={size.id}
-                className={`border rounded-md py-2 px-4 transition  ${selectedSize === size.id ? "bg-black text-white" : ""}`}
-                onClick={() => setSelectedSize(size.id)}
-              >
-                {size.displayValue}
-              </button>
-              )}
-            </div>
-          </div> : <></>}
+  renderAttributeButtons = (items, type, selectedValue, onChange) => {
+    if (!items || items.length === 0) return null;
 
+    const isColor = type === 'color';
+    const label = {
+      size: 'Size:',
+      capacity: 'Capacity:',
+      color: 'Color:',
+      usb3: 'With USB 3 Ports:',
+      touchID: 'Touch ID in Keyboard:'
+    }[type];
 
-          {data.product.capacities.length > 0 ? <div className="mt-4">
-            <span className="font-semibold">Capacity:</span>
-            <div className="flex space-x-2 mt-2" data-testid="product-attribute-capacity">
-              {data.product.capacities.map((capacity) => <button data-testid={`product-attribute-capacity-${capacity.id}`}
-                key={capacity.id}
-                className={`border rounded-md py-2 px-4 transition ${selectedCapacity === capacity.id ? "bg-black text-white" : ""}`}
-                onClick={() => setSelectedCapacity(capacity.id)}
-              >
-                {capacity.displayValue}
-              </button>
-              )}
-            </div>
-          </div> : <></>}
-
-          {data.product.colors.length > 0 ? <div className="mt-4">
-            <span className="font-semibold">Color:</span>
-            <div className="flex space-x-2 mt-2" data-testid="product-attribute-color">
-              {data.product.colors.map((color) => <button data-testid={`product-attribute-color-${color.id}`}
-                key={color}
-                className={`w-10 h-10  ${selectedColor === color.id ? "ring-2 ring-primary" : ""}`}
-                style={{ backgroundColor: color.value }}
-                onClick={() => setSelectedColor(color.id)}
-              ></button>
-              )}
-            </div>
-          </div> : <></>}
-
-
-          <div className="mt-4">
-            <span className="text-xl font-semibold">{data.product.price}{data.product.currency}</span>
+    return (
+      <div className="mt-4">
+        <span className="font-semibold">{label}</span>
+        <div className="flex space-x-2 mt-2" data-testid={`product-attribute-${type}`}>
+          {items.map((item) => (
             <button
-              className={cn(`bg-primary hover:bg-primary/75 transition text-white rounded-lg py-2 px-6 ml-4 uppercase`, { "bg-gray-400 hover:bg-gray-400": !data.product.inStock || (data.product.colors.length > 0 && !selectedColor) || (data.product.sizes.length > 0 && !selectedSize) || (data.product.capacities.length > 0 && !selectedCapacity) })}
-              data-testid="add-to-cart"
-              disabled={!data.product.inStock || (data.product.colors.length > 0 && !selectedColor) || (data.product.sizes.length > 0 && !selectedSize) || (data.product.capacities.length > 0 && !selectedCapacity)}
-              onClick={() => { addItem({ id, price: data.product.price, capacity: selectedCapacity, color: selectedColor, size: selectedSize }); setIsCartOpen(true) }}
+              key={item.id}
+              data-testid={`product-attribute-${type}-${item.id}`}
+              className={isColor
+                ? cn(`w-10 h-10`, { "ring-2 ring-primary": selectedValue === item.id })
+                : cn(`border rounded-md py-2 px-4 transition`, { "bg-black text-white": selectedValue === item.id })}
+              style={isColor ? { backgroundColor: item.value } : undefined}
+              onClick={() => onChange(item.id)}
             >
-              Add to Cart
+              {!isColor && item.displayValue}
             </button>
-          </div>
-
-          {/* Product Description */}
-          <div className="mt-4 text-gray-600" data-testid="product-description">
-            {htmlFrom(data.product.description)}
-          </div>
+          ))}
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
 
-export default ProductPage;
+  render() {
+    const { id } = this.props.params;
+    const { cart } = this.props.cart;
+    const { selectedImage, selectedSize, selectedColor, selectedCapacity, usb3, touchID } = this.state;
+
+    return (
+      <CartOverLayContext.Consumer>
+        {(cartOverLay) =>
+          <Query query={GET_PRODUCT(id)}>
+            {({ loading, error, data }) => {
+              if (loading) return <div className="h-svh w-full flex justify-center items-center text-xl">Loading...</div>;
+
+              const product = data.product;
+
+              return (
+                <div className="container mx-auto px-4 py-8">
+                  <div className="flex">
+                    <div className="flex basis-1/2">
+                      <div className="flex flex-col p-2 space-y-2 mr-2" data-testid="product-gallery">
+                        {product.gallery.map((p, i) => (
+                          <button key={p.link} onClick={() => this.setState({ selectedImage: i })}>
+                            <img
+                              src={p.link}
+                              alt="Thumbnail"
+                              className="w-16 h-16 rounded-lg cursor-pointer"
+                            />
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex-1">
+                        <img
+                          src={product.gallery[selectedImage].link}
+                          alt="Product"
+                          className="flex-1 rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="basis-1/2 pl-8">
+                      <h1 className="text-3xl font-semibold">{product.name}</h1>
+
+                      {this.renderAttributeButtons(product.sizes, 'size', selectedSize,
+                        (id) => this.setState({ selectedSize: id }))}
+                      {this.renderAttributeButtons(product.capacities, 'capacity', selectedCapacity,
+                        (id) => this.setState({ selectedCapacity: id }))}
+                      {this.renderAttributeButtons(product.usb3, 'usb3', usb3,
+                        (id) => this.setState({ usb3: id }))}
+                      {this.renderAttributeButtons(product.touchID, 'touchID', touchID,
+                        (id) => this.setState({ touchID: id }))}
+                      {this.renderAttributeButtons(product.colors, 'color', selectedColor,
+                        (id) => this.setState({ selectedColor: id }))}
+
+                      <div className="mt-4">
+                        <span className="text-xl font-semibold">{product.price}{product.currency}</span>
+                        <button
+                          className={cn(`bg-primary hover:bg-primary/75 transition text-white rounded-lg py-2 px-6 ml-4 uppercase`, {
+                            "bg-gray-400 hover:bg-gray-400": !product.inStock ||
+                              (product.colors.length > 0 && !selectedColor) ||
+                              (product.sizes.length > 0 && !selectedSize) ||
+                              (product.capacities.length > 0 && !selectedCapacity)
+                          })}
+                          data-testid="add-to-cart"
+                          disabled={!product.inStock ||
+                            (product.colors.length > 0 && !selectedColor) ||
+                            (product.sizes.length > 0 && !selectedSize) ||
+                            (product.capacities.length > 0 && !selectedCapacity)}
+                          onClick={() => { cartOverLay.toggleCartPopupOpen(); this.handleAddToCart(id, product.price) }}
+                        >
+                          Add to Cart
+                        </button>
+                      </div>
+
+                      <div className="mt-4 text-gray-600" data-testid="product-description">
+                        {htmlFrom(product.description)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            }}
+          </Query>
+        }
+      </CartOverLayContext.Consumer>
+    );
+  }
+}
+
+export default withRouter(withCart(ProductPage));

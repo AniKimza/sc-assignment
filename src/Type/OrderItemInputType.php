@@ -18,9 +18,11 @@ class OrderItemInputType extends InputObjectType
       "name" => "OrderItemInput",
       "fields" => [
         "product" => Type::string(),
-        "color" => Type::string(),
+        "color" => Type::getNullableType(Type::string()),
         "capacity" => Type::getNullableType(Type::string()),
         "size" => Type::getNullableType(Type::string()),
+        "usb3" => Type::getNullableType(Type::string()),
+        "touchID" => Type::getNullableType(Type::string()),
         "quantity" => Type::int()
       ]
     ]);

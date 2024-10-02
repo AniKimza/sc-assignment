@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react";
-const CartOverLayContext = createContext();
+export const CartOverLayContext = createContext();
 
 export const CartOverLayContextProvider = ({ children }) => {
   const [isCartOpen, setIsCartOpen] = useState(false)

@@ -6,7 +6,6 @@ namespace App\Entity;
 
 use Doctrine\ORM\Mapping\Column;
 use Doctrine\ORM\Mapping\Entity;
-use Doctrine\ORM\Mapping\GeneratedValue;
 use Doctrine\ORM\Mapping\Id;
 use Doctrine\ORM\Mapping\ManyToOne;
 use Doctrine\ORM\Mapping\Table;
@@ -16,18 +15,22 @@ use Doctrine\ORM\Mapping\Table;
 class OrderItem
 {
   #[Id]
-  #[Column(length: 255), GeneratedValue]
+  #[Column(length: 255)]
   public string $id;
   #[ManyToOne(inversedBy: "items", cascade: ["persist"])]
   public Order $order;
-  #[ManyToOne()]
+  #[ManyToOne(targetEntity: Product::class)]
   public Product $product;
   #[Column]
   public int $quantity;
-  #[ManyToOne()]
+  #[ManyToOne(targetEntity: Color::class)]
   public Color $color;
-  #[ManyToOne()]
+  #[ManyToOne(targetEntity: Capacity::class)]
   public Capacity $capacity;
-  #[ManyToOne()]
+  #[ManyToOne(targetEntity: Size::class)]
   public Size $size;
+  #[ManyToOne(targetEntity: USB3::class)]
+  public USB3 $usb3;
+  #[ManyToOne(targetEntity: TouchID::class)]
+  public TouchID $touchID;
 }
